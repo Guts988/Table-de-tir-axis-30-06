@@ -26,7 +26,7 @@
 const V0   = 873;       // m/s
 const K0   = 6.14e-4;  // constante traînée à 15°C (G1, BC 0.380)
 const MASS = 9.72e-3;  // kg (150gr)
-const HS   = 0.044;    // m  (hauteur visée 44mm)
+const HS   = 0.0485;   // m  (hauteur visée — Weaver High 1.2" + rail, voir note)
 const Z0   = 25;       // m  (zéro 1)
 const CLK  = 0.1;      // mrad/clic
 const G    = 9.81;
@@ -134,6 +134,7 @@ function App() {
   const [ang,  setAng]  = useState("");
   const [ht,   setHt]   = useState("");
   const [mode, setMode] = useState("angle");
+  const [dir,  setDir]  = useState("haut"); // "haut" = cible au-dessus, "bas" = cible en dessous
 
   const tbl = useMemo(() => buildTable(tc, wkh, wa), [tc, wkh, wa]);
 
@@ -177,6 +178,9 @@ function App() {
         </div>
         <div style={{ fontSize: 11, opacity: 0.65, marginTop: 3 }}>
           Fiocchi Perfecta 150gr SP · V₀ 873 m/s · BC G1 0.380 · Zéro 25 m · 0.1 mrad/clic
+        </div>
+        <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
+          ⚠️ HS 48.5mm estimée (colliers Weaver High 1.2") — à confirmer au stand
         </div>
       </div>
 
@@ -327,36 +331,71 @@ function App() {
               ⛰️ Calculateur déclive montagne
             </h3>
 
-            {/* Schéma SVG */}
-            <svg width="100%" viewBox="0 0 300 110"
-              style={{ display: "block", marginBottom: 16,
-                background: "#F4F7FB", borderRadius: 8,
-                border: "1px solid #C8D4E4" }}>
-              {/* Sol */}
-              <line x1="18" y1="90" x2="282" y2="90" stroke="#D0D8E4" strokeWidth="1.5" />
-              {/* D_eff */}
-              <line x1="22" y1="90" x2="230" y2="90" stroke="#1A5276" strokeWidth="3" />
-              <text x="126" y="106" fontSize="10" textAnchor="middle"
-                fill="#1A5276" fontWeight="bold">D_eff = D_LV × cos(α)</text>
-              {/* Δh */}
-              <line x1="230" y1="24" x2="230" y2="90" stroke="#C0392B"
-                strokeWidth="2.5" strokeDasharray="6,3" />
-              <text x="246" y="60" fontSize="10" fill="#C0392B" fontWeight="bold">Δh</text>
-              {/* D_LV diagonal */}
-              <line x1="22" y1="90" x2="230" y2="24" stroke={BG} strokeWidth="2.5" />
-              <text x="115" y="47" fontSize="9.5" textAnchor="middle" fill={BG}>
-                D_LV (télémètre)
-              </text>
-              {/* Arc angle α */}
-              <path d="M62,90 A40,40 0 0,0 58,72"
-                fill="none" stroke="#E67E22" strokeWidth="2" />
-              <text x="75" y="77" fontSize="12" fill="#E67E22" fontWeight="bold">α</text>
-              {/* Points */}
-              <circle cx="22" cy="90" r="6" fill={BG} />
-              <text x="22" y="81" fontSize="8.5" textAnchor="middle" fill={BG}>Tireur</text>
-              <circle cx="230" cy="24" r="6" fill="#C0392B" />
-              <text x="230" y="15" fontSize="8.5" textAnchor="middle" fill="#C0392B">Cible</text>
-            </svg>
+            {/* Toggle direction HAUT / BAS */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+              {[["haut", "⬆️ Cible plus haute"], ["bas", "⬇️ Cible plus basse"]].map(([d, l]) => (
+                <button key={d} onClick={() => setDir(d)} style={{
+                  flex: 1, padding: "9px 6px", borderRadius: 7, border: "none",
+                  cursor: "pointer", fontSize: 13,
+                  background: dir === d
+                    ? (d === "haut" ? "#1A5276" : "#922B21")
+                    : "#D4DCE8",
+                  color: dir === d ? "white" : "#444",
+                  fontWeight: dir === d ? "bold" : "normal",
+                }}>{l}</button>
+              ))}
+            </div>
+
+            {/* Schéma SVG — s'adapte à la direction */}
+            {dir === "haut" ? (
+              // Cible PLUS HAUTE que le tireur (tir montant)
+              <svg width="100%" viewBox="0 0 300 110"
+                style={{ display: "block", marginBottom: 14,
+                  background: "#F4F7FB", borderRadius: 8, border: "1px solid #C8D4E4" }}>
+                <line x1="18" y1="90" x2="282" y2="90" stroke="#D0D8E4" strokeWidth="1.5" />
+                <line x1="22" y1="90" x2="230" y2="90" stroke="#1A5276" strokeWidth="3" />
+                <text x="126" y="106" fontSize="10" textAnchor="middle"
+                  fill="#1A5276" fontWeight="bold">D_eff = D_LV × cos(α)</text>
+                <line x1="230" y1="24" x2="230" y2="90" stroke="#C0392B"
+                  strokeWidth="2.5" strokeDasharray="6,3" />
+                <text x="246" y="60" fontSize="10" fill="#C0392B" fontWeight="bold">Δh</text>
+                <line x1="22" y1="90" x2="230" y2="24" stroke={BG} strokeWidth="2.5" />
+                <text x="115" y="47" fontSize="9.5" textAnchor="middle" fill={BG}>D_LV (télémètre)</text>
+                <path d="M62,90 A40,40 0 0,0 58,72" fill="none" stroke="#E67E22" strokeWidth="2" />
+                <text x="75" y="77" fontSize="12" fill="#E67E22" fontWeight="bold">α</text>
+                <circle cx="22" cy="90" r="6" fill={BG} />
+                <text x="22" y="81" fontSize="8.5" textAnchor="middle" fill={BG}>Tireur</text>
+                <circle cx="230" cy="24" r="6" fill="#C0392B" />
+                <text x="230" y="15" fontSize="8.5" textAnchor="middle" fill="#C0392B">Cible</text>
+              </svg>
+            ) : (
+              // Cible PLUS BASSE que le tireur (tir descendant — cabane, falaise...)
+              <svg width="100%" viewBox="0 0 300 110"
+                style={{ display: "block", marginBottom: 14,
+                  background: "#FDF4F3", borderRadius: 8, border: "1px solid #E8C4C0" }}>
+                <line x1="18" y1="20" x2="282" y2="20" stroke="#D0D8E4" strokeWidth="1.5" />
+                {/* D_eff horizontal bas */}
+                <line x1="22" y1="86" x2="230" y2="86" stroke="#1A5276" strokeWidth="3" />
+                <text x="126" y="100" fontSize="10" textAnchor="middle"
+                  fill="#1A5276" fontWeight="bold">D_eff = D_LV × cos(α)</text>
+                {/* Δh vertical */}
+                <line x1="230" y1="20" x2="230" y2="86" stroke="#C0392B"
+                  strokeWidth="2.5" strokeDasharray="6,3" />
+                <text x="246" y="56" fontSize="10" fill="#C0392B" fontWeight="bold">Δh</text>
+                {/* D_LV diagonal descendant */}
+                <line x1="22" y1="20" x2="230" y2="86" stroke={BG} strokeWidth="2.5" />
+                <text x="115" y="43" fontSize="9.5" textAnchor="middle" fill={BG}>D_LV (télémètre)</text>
+                {/* Arc angle */}
+                <path d="M62,20 A40,40 0 0,1 58,38" fill="none" stroke="#E67E22" strokeWidth="2" />
+                <text x="75" y="48" fontSize="12" fill="#E67E22" fontWeight="bold">α</text>
+                {/* Tireur en HAUT */}
+                <circle cx="22" cy="20" r="6" fill={BG} />
+                <text x="22" y="12" fontSize="8.5" textAnchor="middle" fill={BG}>Tireur</text>
+                {/* Cible en BAS */}
+                <circle cx="230" cy="86" r="6" fill="#C0392B" />
+                <text x="230" y="100" fontSize="8.5" textAnchor="middle" fill="#C0392B">Cible</text>
+              </svg>
+            )}
 
             {/* Sélecteur de mode */}
             <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -410,13 +449,16 @@ function App() {
 
             {/* Résultat */}
             {calc ? (
-              <div style={{ background: BG, color: "white", borderRadius: 10,
+              <div style={{
+                background: dir === "haut" ? BG : "#7B241C",
+                color: "white", borderRadius: 10,
                 padding: 18, boxShadow: "0 4px 14px rgba(0,0,0,.25)" }}>
                 <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 12,
                   borderBottom: "1px solid rgba(255,255,255,.2)", paddingBottom: 10 }}>
-                  Angle : <b>{calc.ad}°</b>
-                  &nbsp;·&nbsp; Distance effective : <b>{calc.de} m</b>
-                  &nbsp;·&nbsp; Conditions : {tc}°C · {wkh} km/h
+                  {dir === "haut" ? "⬆️ Tir montant" : "⬇️ Tir descendant"}
+                  &nbsp;·&nbsp; Angle : <b>{calc.ad}°</b>
+                  &nbsp;·&nbsp; D_eff : <b>{calc.de} m</b>
+                  &nbsp;·&nbsp; {tc}°C · {wkh} km/h
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr",
                   gap: 8, textAlign: "center" }}>
@@ -446,9 +488,9 @@ function App() {
             <div style={{ marginTop: 14, padding: 11, background: "#E8EEF7",
               borderRadius: 7, fontSize: 12, color: "#444",
               border: "1px solid #C4D0E0", lineHeight: 1.6 }}>
-              <b>Rappel :</b> Formule identique en tir montant et descendant.
+              <b>Rappel :</b> La formule D_eff = D_LV × cos(α) est identique en tir montant
+              et descendant — seule la distance horizontale compte pour la balistique.
               Correction significative au-delà de ~15° (Δh ≈ 27% de D_LV).
-              En dessous de 15°, l'effet est négligeable en pratique.
             </div>
           </div>
         )}
